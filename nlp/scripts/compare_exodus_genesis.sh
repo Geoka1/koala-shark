@@ -1,5 +1,5 @@
 #!/bin/bash
-# tag: compare_exodus_genesis.sh
+# tag: compare_exodus_genesis_fifo_safe
 # set -e
 
 IN=${IN:-$SUITE_DIR/inputs/pg}
@@ -8,36 +8,37 @@ OUT=${1:-$SUITE_DIR/outputs/8.3_3/}
 ENTRIES=${ENTRIES:-1000}
 mkdir -p "$OUT"
 
+# Precompute Exodus types into a temp file
+EXODUS_TMP=$(mktemp)
+tr -sc '[A-Z][a-z]' '[\012*]' < "$INPUT2" | sort -u > "$EXODUS_TMP"
+
 pure_func() {
-    input=$1
-    input2=$2
-    infile=$3
-    outfile=$4
+    input="$1"
+    outfile="$OUT/${input}.out"
+    infile="$IN/$input"
 
-    TEMPDIR=$(mktemp -d)
+    gfifo="/tmp/genesis_fifo_${input}_$$"
+    mkfifo "$gfifo"
 
-    cat > "${TEMPDIR}/${input}1.types"
+    # Write Genesis stream into FIFO
+    (
+        tr -c 'A-Za-z' '[\n*]' < "$infile" |
+        grep -v '^\s*$' |
+        sort -u > "$gfifo"
+    ) &
 
-    tr -sc '[A-Z][a-z]' '[\012*]' < "$input2" | sort -u > "${TEMPDIR}/${input}2.types"
+    # Use Exodus types from the buffered file
+    sort "$gfifo" "$EXODUS_TMP" "$EXODUS_TMP" |
+        uniq -c | head > "$outfile"
 
-    sort "${TEMPDIR}/${input}1.types" \
-         "${TEMPDIR}/${input}2.types" \
-         "${TEMPDIR}/${input}2.types" |
-         uniq -c | head > "$outfile"
-
-    rm -rf "${TEMPDIR}"
+    rm -f "$gfifo"
 }
 export -f pure_func
 
 for input in $(ls "$IN" | head -n "$ENTRIES"); do
-    infile="$IN/$input"
-    outfile="$OUT/${input}.out"
-
-    tr -c 'A-Za-z' '[\n*]' < "$infile" |
-        grep -v '^\s*$' |
-        sort -u |
-        pure_func "$input" "$INPUT2" "$infile" "$outfile" &
+    pure_func "$input" &
 done
 
 wait
+rm -f "$EXODUS_TMP"
 echo 'done'

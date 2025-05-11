@@ -1,5 +1,7 @@
-#!/usr/bin/env bash
-# tag: trigram_rec_parallel
+#!/bin/bash
+# tag: trigram_rec
+# set -e
+
 
 IN=${IN:-$SUITE_DIR/inputs/pg}
 OUT=${1:-$SUITE_DIR/outputs/6_1/}
@@ -7,21 +9,34 @@ ENTRIES=${ENTRIES:-1000}
 mkdir -p "$OUT"
 
 pure_func() {
-    local input="$1"
-    local pattern="$2"
-    local out_file="$3"
-
-    grep "$pattern" < "$IN/$input" |
-    tr -sc 'A-Za-z' '\n*' |
-    paste - - - |
-    sort | uniq -c |
-    sort -nr | sed -n '1,5p' > "$out_file"
+    input=$1
+    mkfifi "$input"p1 "$input"p2
+    tr -sc '[A-Z][a-z]' '[\012*]' | tee "$input"p1 "$input"p2 | paste - <(tail +2 "$input"p1) <(tail +3 "$input"p2) | sort | uniq -c
+    rm "$input"p1 "$input"p2
 }
 export -f pure_func
 
-find "$IN" -maxdepth 1 -type f | head -n "$ENTRIES" | while IFS= read -r filepath; do
-    input=$(basename "$filepath")
-    pure_func "$input" "the land of" "$OUT/${input}.0.out" &
-    pure_func "$input" "And he said" "$OUT/${input}.1.out" &
+job_count=0
+
+for input in $(ls "$IN" | head -n "$ENTRIES" | xargs -I arg1 basename arg1); do
+    {
+        grep 'the land of' "$IN/$input" | pure_func "$input" | sort -nr | sed 5q > "$OUT/${input}.0.out"
+    } &
+    ((job_count++))
+    if (( job_count >= MAX_PROCS )); then
+        wait -n
+        ((job_count--))
+    fi
+
+    {
+        grep 'And he said' "$IN/$input" | pure_func "$input" | sort -nr | sed 5q > "$OUT/${input}.1.out"
+    } &
+    ((job_count++))
+    if (( job_count >= MAX_PROCS )); then
+        wait -n
+        ((job_count--))
+    fi
 done
 wait
+
+echo 'done';

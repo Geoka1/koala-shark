@@ -9,32 +9,23 @@ mkdir -p "$OUT"
 
 pure_func() {
     input=$1
-    infile=$2
-    outfile=$3
-
-    TEMPDIR=$(mktemp -d)
-
-    cat > "${TEMPDIR}/${input}.words"
-
-    # Approximate syllables by counting vowels
-    tr -sc '[AEIOUaeiou\012]' ' ' < "${TEMPDIR}/${input}.words" |
-        awk '{print NF}' > "${TEMPDIR}/${input}.syl"
-
-    paste "${TEMPDIR}/${input}.syl" "${TEMPDIR}/${input}.words" |
-        sort -nr | sed 5q > "$outfile"
-
-    rm -rf "${TEMPDIR}"
+    mkfifo "$input"p1
+    tee "$input"p1 | tr -sc '[AEIOUaeiou\012]' ' ' | awk '{print NF}' | paste - "$input"p1 | sort -nr | sed 5q
+    rm "$input"p1
 }
-export -f pure_func
+job_count=0
 
 for input in $(ls "$IN" | head -n "$ENTRIES"); do
-    infile="$IN/$input"
-    outfile="$OUT/${input}.out"
+    {
+        tr -c 'A-Za-z' '[\n*]' < "$IN/$input" | grep -v "^\s*$" | sort -u \
+            | pure_func "$input" > "$OUT/${input}.out"
+    } &
 
-    tr -c 'A-Za-z' '[\n*]' < "$infile" |
-        grep -v '^\s*$' |
-        sort -u |
-        pure_func "$input" "$infile" "$outfile" &
+    ((job_count++))
+    if (( job_count >= MAX_PROCS )); then
+        wait -n
+        ((job_count--))
+    fi
 done
 
 wait
