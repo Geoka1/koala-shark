@@ -11,6 +11,7 @@ export TMPDIR=$PWD/tmp
 
 INPUTS="$PWD/inputs"
 OUTPUT_BASE="$PWD/outputs/ngrams"
+KOALA_SHELL="${KOALA_SHELL:-bash}"
 
 suffix=""
 for arg in "$@"; do

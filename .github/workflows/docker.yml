@@ -25,6 +25,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Derive lowercase IMAGE_NAME
+        run: echo "IMAGE_NAME=${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
+
+
       - name: Set up QEMU (multi-arch)
         uses: docker/setup-qemu-action@v2
 

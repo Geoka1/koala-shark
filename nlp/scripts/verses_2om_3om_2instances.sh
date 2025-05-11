@@ -1,20 +1,29 @@
 #!/bin/bash
-# tag: verse_2om_3om_2instances
-# set -e
-# verses with 2 or more, 3 or more, exactly 2 instances of light.
 
-IN=${IN:-$SUITE_DIR/inputs/pg}
-OUT=${1:-$SUITE_DIR/outputs/6_7/}
+# Parallelized script for processing light patterns in input files using background jobs
+
+IN=${IN:-"$SUITE_DIR/inputs/pg"}
+OUT=${1:-"$SUITE_DIR/outputs/6_7/"}
 ENTRIES=${ENTRIES:-1000}
+
 mkdir -p "$OUT"
 
-for input in $(ls ${IN} | head -n ${ENTRIES} | xargs -I arg1 basename arg1)
-do
-    # Process the file
-    grep -c 'light.*light' < "$input" > "${OUT}/${input}.out0" &
-    grep -c 'light.*light.*light' < "$input" > "${OUT}/${input}.out1" &
-    grep 'light.*light' < "$input" | grep -vc 'light.*light.*light' > "${OUT}/${input}.out2" &
+process_file() {
+    local input="$1"
+    local in_dir="$2"
+    local out_dir="$3"
+
+    grep -c 'light.*light' <"$in_dir/$input" >"$out_dir/${input}.out0"
+    grep -c 'light.*light.*light' <"$in_dir/$input" >"$out_dir/${input}.out1"
+    grep 'light.*light' <"$in_dir/$input" | grep -vc 'light.*light.*light' >"$out_dir/${input}.out2"
+}
+
+count=0
+for input in $(ls "$IN" | head -n "$ENTRIES"); do
+    {
+        process_file "$input" "$IN" "$OUT" &
+        count=$((count + 1))
+    }
 done
 
-echo 'done';
-# rm -rf ${OUT}
+wait

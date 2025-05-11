@@ -3,7 +3,7 @@
 
 mkdir -p "$2"
 
-for item in "$1"/*.pcap; do
+for item in "$1"/*; do
     output_name="$2/$(basename "$item").zip"
     gzip --no-name -c "$item" > "$output_name" &
 done

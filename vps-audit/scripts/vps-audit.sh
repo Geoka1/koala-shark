@@ -11,7 +11,7 @@ NC='\033[0m' # No Color
 
 # Get current timestamp for the report filename
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-REPORT_FILE="vps-audit-report-${TIMESTAMP}.txt"
+REPORT_FILE="vps-audit-report.txt"
 
 print_header() {
     local header="$1"

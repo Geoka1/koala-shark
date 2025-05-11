@@ -8,7 +8,7 @@ pure_func() {
 }
 export -f pure_func
 
-for item in "$1"/*.pcap; do
+for item in "$1"/*; do
     output_name="$2/$(basename "$item").enc"
     pure_func < "$item" > "$output_name" &
 done

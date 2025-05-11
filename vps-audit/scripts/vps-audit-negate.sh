@@ -10,8 +10,7 @@ BOLD='\033[1m'
 NC='\033[0m' # No Color
 
 # Get current timestamp for the report filename
-TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-REPORT_FILE="vps-audit-negate-report-${TIMESTAMP}.txt"
+REPORT_FILE="vps-audit-negate-report.txt"
 
 print_header() {
     local header="$1"

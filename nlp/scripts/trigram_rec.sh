@@ -1,26 +1,27 @@
-#!/bin/bash
-# tag: trigram_rec
-# set -e
+#!/usr/bin/env bash
+# tag: trigram_rec_parallel
 
 IN=${IN:-$SUITE_DIR/inputs/pg}
 OUT=${1:-$SUITE_DIR/outputs/6_1/}
 ENTRIES=${ENTRIES:-1000}
 mkdir -p "$OUT"
 
-
 pure_func() {
-    input=$1
-    tr -sc '[AEIOUaeiou\012]' ' ' < "$IN/$input" | awk '{print NF}' |
-    paste - <(tr -c 'A-Za-z' '[\n*]' < "$IN/$input" | sort -u) | sort -nr | sed 5q
-}
+    local input="$1"
+    local pattern="$2"
+    local out_file="$3"
 
+    grep "$pattern" < "$IN/$input" |
+    tr -sc 'A-Za-z' '\n*' |
+    paste - - - |
+    sort | uniq -c |
+    sort -nr | sed -n '1,5p' > "$out_file"
+}
 export -f pure_func
 
-for input in $(ls "$IN" | head -n "$ENTRIES"); do
-    pure_func "$input" > "${OUT}/${input}.out" &
+find "$IN" -maxdepth 1 -type f | head -n "$ENTRIES" | while IFS= read -r filepath; do
+    input=$(basename "$filepath")
+    pure_func "$input" "the land of" "$OUT/${input}.0.out" &
+    pure_func "$input" "And he said" "$OUT/${input}.1.out" &
 done
-
 wait
-
-echo 'done';
-# rm -rf "$OUT"

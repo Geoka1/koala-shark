@@ -1,4 +1,6 @@
-#!/bin/bash 
+#!/bin/bash
+# tag: count_trigrams.sh
+# set -e
 
 IN=${IN:-$SUITE_DIR/inputs/pg}
 OUT=${1:-$SUITE_DIR/outputs/4_3b/}
@@ -7,19 +9,29 @@ mkdir -p "$OUT"
 
 pure_func() {
     input=$1
-    tr -c 'A-Za-z' '[\n*]' < "$IN/$input" | grep -v "^\s*$" |
-    tail -n +2 | paste - <(tail -n +2 "$IN/$input" | tail -n +2) | sort | uniq -c
-}
+    infile=$2
+    outfile=$3
 
+    TEMPDIR=$(mktemp -d)
+
+    tr -c 'A-Za-z' '[\n*]' < "$infile" | grep -v '^\s*$' > "${TEMPDIR}/${input}.words"
+
+    tail +2 "${TEMPDIR}/${input}.words" > "${TEMPDIR}/${input}.nextwords"
+    tail +2 "${TEMPDIR}/${input}.words" > "${TEMPDIR}/${input}.nextwords2"
+
+    paste "${TEMPDIR}/${input}.words" \
+          "${TEMPDIR}/${input}.nextwords" \
+          "${TEMPDIR}/${input}.nextwords2" |
+        sort | uniq -c > "$outfile"
+
+    rm -rf "${TEMPDIR}"
+}
 export -f pure_func
 
-# Parallelize the processing
-for input in $(ls ${IN} | head -n ${ENTRIES} | xargs -I arg1 basename arg1); do
-    pure_func "$input" > "${OUT}/${input}.trigrams" &
+for input in $(ls "$IN" | head -n "$ENTRIES"); do
+    infile="$IN/$input"
+    outfile="$OUT/${input}.trigrams"
+    pure_func "$input" "$infile" "$outfile" &
 done
 
 wait
-
-echo 'done'
-
-# rm -rf ${OUT}

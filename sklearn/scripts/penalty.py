@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import warnings
 import sys
 import pickle
@@ -12,14 +14,6 @@ if model.penalty != "elasticnet" and model.l1_ratio is not None:
         "l1_ratio parameter is only used when penalty is "
         "'elasticnet'. Got "
         "(penalty={})".format(model.penalty)
-    )
-
-# TODO(1.4): Remove "none" option
-if model.penalty == "none":
-    warnings.warn(
-        "`penalty='none'`has been deprecated in 1.2 and will be removed in 1.4."
-        " To keep the past behaviour, set `penalty=None`.",
-        FutureWarning,
     )
 
 if model.penalty is None or model.penalty == "none":
