@@ -7,8 +7,7 @@ on:
   pull_request:
 
 env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  REGISTRY: ghcr.io           # global; always lowercase
 
 jobs:
   run-benchmark:
@@ -22,7 +21,6 @@ jobs:
           - covid-mts
           - file-enc
           - log-analysis
-          - makeself
           - max-temp
           - media-conv
           - nlp
@@ -36,6 +34,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+
+      - name: Derive lowercase IMAGE_NAME
+        run: echo "IMAGE_NAME=${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
 
       - name: Log in to GHCR
         uses: docker/login-action@v2

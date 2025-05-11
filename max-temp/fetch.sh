@@ -30,6 +30,10 @@ for arg in "$@"; do
     fi
 done
 
+if [ -f "$input_dir/temperatures.$suffix.txt" ]; then
+  exit 0
+fi
+
 seq "$FROM" "$TO" |
   sed "s;^;$URL;" |
   sed 's;$;/;' |

@@ -5,7 +5,7 @@
 IN="inputs"
 IN_NAME="input.txt"
 OUT="outputs"
-
+mkdir -p "$OUT"
 for arg in "$@"; do
     case "$arg" in
         --small) IN_NAME="input_small.txt" ;;
